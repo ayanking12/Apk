@@ -4,11 +4,12 @@ from rembg import remove
 import io
 import os
 
+# AI Engine Fix
 os.environ["ONNXRUNTIME_BACKEND"] = "cpu"
 
-st.set_page_config(page_title="Rajput Professional Flex", layout="wide")
+st.set_page_config(page_title="Rajput Fix Flex", layout="wide")
 
-st.title("🗳️ Rajput Flex - Manual Positioning")
+st.title("🗳️ Rajput Election Flex (Fixed Boxes)")
 
 # 1. Background Load
 try:
@@ -18,47 +19,38 @@ except:
     st.error("Galti: GitHub par 'background.png' nahi mili!")
     st.stop()
 
-# 2. Uploaders (Sirf 3 Box abhi taake asaan rahe)
+# 2. Fixed Positions (Aapke Red Boxes ke exact coordinates)
+# Box 1: Top Left center, Box 2: Top Right, Box 3: Bottom Right
+fixed_positions = [
+    (480, 150), # Box 1
+    (730, 150), # Box 2
+    (730, 520)  # Box 3
+]
+
+# 3. Uploaders
 cols = st.columns(3)
-with cols[0]:
-    f1 = st.file_uploader("Box 1 ki Photo", type=["jpg","png","jpeg"], key="b1")
-    # Slider for Box 1
-    x1 = st.slider("Box 1: Daayen-Baayen", 0, W, 450)
-    y1 = st.slider("Box 1: Upar-Neeche", 0, H, 100)
-    s1 = st.slider("Box 1 ka Size", 100, 800, 350)
-
-with cols[1]:
-    f2 = st.file_uploader("Box 2 ki Photo", type=["jpg","png","jpeg"], key="b2")
-    x2 = st.slider("Box 2: Daayen-Baayen", 0, W, 700)
-    y2 = st.slider("Box 2: Upar-Neeche", 0, H, 100)
-    s2 = st.slider("Box 2 ka Size", 100, 800, 350)
-
-with cols[2]:
-    f3 = st.file_uploader("Box 3 ki Photo", type=["jpg","png","jpeg"], key="b3")
-    x3 = st.slider("Box 3: Daayen-Baayen", 0, W, 700)
-    y3 = st.slider("Box 3: Upar-Neeche", 0, H, 450)
-    s3 = st.slider("Box 3 ka Size", 100, 800, 350)
+files = []
+for i in range(3):
+    with cols[i]:
+        f = st.file_uploader(f"Banda {i+1} Photo", type=["jpg","png","jpeg"], key=f"f_{i}")
+        files.append(f)
 
 if st.button("Final Flex Banayein 🚀"):
     final_flex = bg_img.copy()
     
-    # Processing Photos
-    data = [(f1, x1, y1, s1), (f2, x2, y2, s2), (f3, x3, y3, s3)]
-    
-    for i, (f, x, y, s) in enumerate(data):
+    for i, f in enumerate(files):
         if f:
-            with st.spinner(f"Photo {i+1} set ho rahi hai..."):
+            with st.spinner(f"Photo {i+1} Set ho rahi hai..."):
                 img = Image.open(f)
+                # Pure AI Cut
                 cut = remove(img)
-                # Aspect ratio barkarar rakhne ke liye
-                w_ratio = s / float(cut.size[0])
-                h_size = int(float(cut.size[1]) * float(w_ratio))
-                cut = cut.resize((s, h_size))
-                # Paste
-                final_flex.paste(cut, (x, y), cut)
+                # Box ke mutabiq perfect size
+                cut = cut.resize((350, 450))
+                # Paste on fixed box location
+                final_flex.paste(cut, fixed_positions[i], cut)
     
     st.image(final_flex, use_column_width=True)
     
     buf = io.BytesIO()
     final_flex.save(buf, format="PNG")
-    st.download_button("📥 Flex Download", buf.getvalue(), "flex.png")
+    st.download_button("📥 Flex Download Karein", buf.getvalue(), "rajput_fix_flex.png")
