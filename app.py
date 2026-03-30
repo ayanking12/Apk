@@ -4,67 +4,50 @@ from rembg import remove
 import io
 import os
 
-# Ensuring the AI engine uses the CPU properly
+# AI Engine Fix
 os.environ["ONNXRUNTIME_BACKEND"] = "cpu"
 
 st.set_page_config(page_title="Rajput Professional Flex", layout="wide")
 
-st.title("🗳️ Professional 5-Person Flex Maker")
+st.title("🗳️ Rajput Election Flex Maker")
 
-# 1. Load Background
+# 1. Background Load
 try:
     bg_img = Image.open("background.png").convert("RGBA")
     W, H = bg_img.size
 except:
-    st.error("Error: 'background.png' not found on GitHub!")
+    st.error("Error: GitHub par 'background.png' nahi mili!")
     st.stop()
 
-# 2. Sidebar Controls for Perfect Alignment
-st.sidebar.header("Adjust Positions (If needed)")
-# These defaults are set to match your Red Boxes
-p1 = (st.sidebar.slider("Banda 1 (Box 1) L-R", 0, W, 480), st.sidebar.slider("Banda 1 (Box 1) U-D", 0, H, 100))
-p2 = (st.sidebar.slider("Banda 2 (Box 2) L-R", 0, W, 720), st.sidebar.slider("Banda 2 (Box 2) U-D", 0, H, 100))
-p3 = (st.sidebar.slider("Banda 3 (Box 3) L-R", 0, W, 720), st.sidebar.slider("Banda 3 (Box 3) U-D", 0, H, 400))
-p4 = (st.sidebar.slider("Banda 4 (Left) L-R", 0, W, 100), st.sidebar.slider("Banda 4 (Left) U-D", 0, H, 300))
-p5 = (st.sidebar.slider("Banda 5 (Bottom) L-R", 0, W, 400), st.sidebar.slider("Banda 5 (Bottom) U-D", 0, H, 500))
+# 2. Sidebar Positions (Jo aapne boxes bataye thay)
+st.sidebar.header("Doston ki Jagah")
+p1 = (st.sidebar.slider("Box 1 (Right) L-R", 0, W, 500), st.sidebar.slider("Box 1 U-D", 0, H, 150))
+p2 = (st.sidebar.slider("Box 2 (Far Right) L-R", 0, W, 750), st.sidebar.slider("Box 2 U-D", 0, H, 150))
+p3 = (st.sidebar.slider("Box 3 (Bottom Right) L-R", 0, W, 750), st.sidebar.slider("Box 3 U-D", 0, H, 450))
 
-all_pos = [p1, p2, p3, p4, p5]
-
-# 3. Photo Uploaders (Horizontal Layout)
-cols = st.columns(5)
-files = []
-for i in range(5):
-    with cols[i]:
-        f = st.file_uploader(f"Banda {i+1}", type=["jpg","png","jpeg"], key=f"u_{i}")
-        files.append(f)
+# 3. Uploaders
+f1 = st.file_uploader("Pehli Photo (Box 1)", type=["jpg","png","jpeg"], key="b1")
+f2 = st.file_uploader("Doosri Photo (Box 2)", type=["jpg","png","jpeg"], key="b2")
+f3 = st.file_uploader("Teesri Photo (Box 3)", type=["jpg","png","jpeg"], key="b3")
 
 if st.button("Final Flex Banayein 🚀"):
-    # Start with a clean copy of the background
     final_flex = bg_img.copy()
+    files = [f1, f2, f3]
+    all_pos = [p1, p2, p3]
     
     for i, f in enumerate(files):
         if f:
-            with st.spinner(f"Processing Banda {i+1}..."):
+            with st.spinner(f"Photo {i+1} ki cutting ho rahi hai..."):
                 img = Image.open(f)
-                
-                # Step 1: High-Quality AI Cut
-                # We use alpha_matting=True to make the edges cleaner
-                cut = remove(img, alpha_matting=True) 
-                
-                # Step 2: Solid Resize (No heavy fading that makes them look like ghosts)
-                # Box 1 and 2 are usually smaller, others larger
-                if i < 2:
-                    cut = cut.resize((320, 420))
-                else:
-                    cut = cut.resize((400, 520))
-                
-                # Step 3: Paste directly onto background
+                # Pure AI Cutting (Matting True taake edges saaf hon)
+                cut = remove(img, alpha_matting=True)
+                # Solid Resize (No Fading)
+                cut = cut.resize((380, 500))
+                # Paste directly on background
                 final_flex.paste(cut, all_pos[i], cut)
     
-    # Show the result
     st.image(final_flex, use_column_width=True)
     
-    # Download Button
     buf = io.BytesIO()
     final_flex.save(buf, format="PNG")
-    st.download_button("📥 Download Final Flex", buf.getvalue(), "rajput_election_flex.png")
+    st.download_button("📥 Flex Download Karein", buf.getvalue(), "rajput_flex.png")
