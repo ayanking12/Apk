@@ -1,50 +1,47 @@
 import streamlit as st
 from PIL import Image
+from rembg import remove
 import io
 
-# Page Config
-st.set_page_config(page_title="Rajput Flex Maker", layout="centered")
+st.set_page_config(page_title="Rajput Multi-Flex", layout="wide")
 
-st.markdown("""
-    <style>
-    .main { background-color: #013220; }
-    stButton>button { width: 100%; background-color: #ffcc00; color: black; font-weight: bold; height: 50px; border-radius: 10px; }
-    </style>
-    """, unsafe_allow_html=True)
+st.title("🗳️ Multi-Person Flex Maker")
+st.write("4-5 doston ki photos upload karein, AI sab ko style mein cut kar dega.")
 
-st.title("🗳️ Election Flex Maker")
-st.success("App live hai! Ab ye foran chalegi.")
+# Requirements check for rembg
+# Yaad rakhein requirements.txt mein 'rembg' dubara add karna hoga
 
-# Sidebar Settings
-mode = st.sidebar.radio("Kitne bande?", ["Single Person", "Multiple People"])
-user_name = st.sidebar.text_input("Bande ka Naam:", "Rajput Sahab")
-
-# Load Background
 try:
     bg_img = Image.open("background.png").convert("RGBA")
 except:
-    st.error("Pehle 'background.png' upload karein!")
+    st.error("Background image nahi mili!")
     st.stop()
 
-# Upload Photo
-st.warning("Note: Style cutting ke liye 'Background Removed' (PNG) photo upload karein.")
-uploaded_file = st.file_uploader("Gallery se photo uthayein", type=["png", "jpg", "jpeg"])
+# Upload Multiple Files
+uploaded_files = st.file_uploader("4 se 5 Photos select karein", type=["png", "jpg", "jpeg"], accept_multiple_files=True)
 
-if uploaded_file is not None:
-    user_img = Image.open(uploaded_file).convert("RGBA")
-    
-    # Resize (Muslim Bhai Style Frame)
-    user_img = user_img.resize((480, 580)) 
+if uploaded_files:
+    if len(uploaded_files) > 5:
+        st.warning("Sirf 5 log tak allow hain.")
+        uploaded_files = uploaded_files[:5]
 
-    # Positioning
-    if mode == "Single Person":
-        bg_img.paste(user_img, (530, 230), user_img)
-    else:
-        bg_img.paste(user_img, (400, 230), user_img)
+    with st.spinner('Sab doston ki cutting ho rahi hai...'):
+        # Initial Position (X, Y) - Aap ise adjust kar sakte hain
+        positions = [(550, 230), (350, 230), (750, 230), (150, 300), (950, 300)]
+        
+        for i, file in enumerate(uploaded_files):
+            img = Image.open(file)
+            # AI Auto-Cut
+            cut_img = remove(img)
+            # Resize
+            cut_img = cut_img.resize((350, 450)) # Thoda chota resize taake 5 log purey ayein
+            
+            # Paste on Background
+            bg_img.paste(cut_img, positions[i], cut_img)
 
     st.image(bg_img, use_column_width=True)
-
+    
     # Download
     buf = io.BytesIO()
     bg_img.save(buf, format="PNG")
-    st.download_button("📥 Flex Download Karein", data=buf.getvalue(), file_name="election_flex.png")
+    st.download_button("📥 Final Flex Download", data=buf.getvalue(), file_name="multi_flex.png")
