@@ -5,106 +5,91 @@ import io
 import os
 import numpy as np
 
-# AI Engine Fix
 os.environ["ONNXRUNTIME_BACKEND"] = "cpu"
 
-st.set_page_config(page_title="Rajput Final Flex Pro", layout="wide")
+st.set_page_config(page_title="Rajput Unlimited Flex", layout="wide")
 
-st.title("🗳️ Rajput Election Flex Maker (Chehre Fix)")
-st.write("Doston ki photos upload karein, ab chehre apni asli shakal mein fit hon gay, lambay nahi hon gay.")
+st.title("🗳️ Unlimited Group Flex Maker")
+st.write("Jitne marzi doston ki photos upload karein, AI sab ko grid mein set kar dega.")
 
-# --- Function to Fade Bottom and Blend (Muslim Bhai Style) ---
+# --- Function: Muslim Bhai Style Blend ---
 def apply_style_fade(img):
     img = img.convert("RGBA")
     width, height = img.size
     alpha = np.array(img.split()[-1])
-    
-    # Neechay se 35% blend
-    fade_start = int(height * 0.65)
+    fade_start = int(height * 0.6)
     for y in range(fade_start, height):
         mask_value = int(255 * (1 - (y - fade_start) / (height - fade_start)))
         alpha[y, :] = np.minimum(alpha[y, :], mask_value)
-        
     img.putalpha(Image.fromarray(alpha))
     return img
-
-# --- Function to Maintain Aspect Ratio while Fitting into a Box ---
-# This fixes the "long face" issue
-def resize_contain(img, max_w, max_h):
-    orig_w, orig_h = img.size
-    orig_aspect = orig_w / orig_h
-    box_aspect = max_w / max_h
-    
-    # Calculate new size while maintaining original aspect ratio
-    if orig_aspect > box_aspect:
-        # Too wide, fit to width
-        new_w = max_w
-        new_h = int(new_w / orig_aspect)
-    else:
-        # Too tall, fit to height
-        new_h = max_h
-        new_w = int(new_h * orig_aspect)
-        
-    return img.resize((new_w, new_h))
 
 # 1. Background Load
 try:
     bg_img = Image.open("background.png").convert("RGBA")
     W, H = bg_img.size
 except:
-    st.error("Galti: GitHub par 'background.png' nahi mili!")
+    st.error("Galti: GitHub par 'background.png' upload karein!")
     st.stop()
 
-# 2. coordinates Fix (Percentages based - Previously confirmed correct)
-# Box 1: (x=45%, y=15%), Box 2: (x=68%, y=15%), Box 3: (x=68%, y=46%)
-pos1 = (int(W * 0.45), int(H * 0.15))
-pos2 = (int(W * 0.68), int(H * 0.15))
-pos3 = (int(W * 0.68), int(H * 0.46))
+# 2. Sidebar Controls
+st.sidebar.header("Layout Settings")
+pp_row = st.sidebar.slider("Ek line mein kitne bande hon?", 2, 10, 4)
+top_margin = st.sidebar.slider("Upar se kitni jagah chorna?", 0, H, 200)
+left_margin = st.sidebar.slider("Side se kitni jagah chorna?", 0, W, 50)
+person_scale = st.sidebar.slider("Bandon ka size (%)", 10, 100, 30)
 
-# Define max box sizes for containing images without stretching
-box1_max = (int(W * 0.30), int(H * 0.38)) # Smaller box size constraint
-box3_max = (int(W * 0.32), int(H * 0.45)) # Taller box size constraint
+# 3. Unlimited File Uploader
+uploaded_files = st.file_uploader("Sab doston ki photos ek sath select karke upload karein", 
+                                  type=["jpg","png","jpeg"], 
+                                  accept_multiple_files=True)
 
-box_constraints = [box1_max, box1_max, box3_max]
+if st.button("Unlimited Flex Banayein 🚀"):
+    if not uploaded_files:
+        st.warning("Pehle kuch photos to upload karein jani!")
+    else:
+        final_flex = bg_img.copy()
+        
+        # Calculate Sizes
+        max_person_w = int((W - (left_margin * 2)) / pp_row)
+        person_w = int(max_person_w * (person_scale / 100))
+        person_h = int(person_w * 1.3) # Maintain decent height
+        
+        current_x = left_margin
+        current_y = top_margin
+        count = 0
 
-# 3. Uploaders
-cols = st.columns(3)
-files = []
-for i in range(3):
-    with cols[i]:
-        f = st.file_uploader(f"Dabba {i+1} ki Photo", type=["jpg","png","jpeg"], key=f"user_{i}")
-        files.append(f)
+        progress_bar = st.progress(0)
+        
+        for i, f in enumerate(uploaded_files):
+            with st.spinner(f"Banda {i+1} process ho raha hai..."):
+                img = Image.open(f)
+                # AI Cut
+                cut = remove(img, alpha_matting=True)
+                # Aspect Ratio Resize
+                aspect = cut.width / cut.height
+                new_h = person_h
+                new_w = int(new_h * aspect)
+                cut = cut.resize((new_w, new_h))
+                # Fade
+                styled_img = apply_style_fade(cut)
+                
+                # Paste
+                final_flex.paste(styled_img, (current_x, current_y), styled_img)
+                
+                # Update Coordinates for next person
+                count += 1
+                if count >= pp_row:
+                    count = 0
+                    current_x = left_margin
+                    current_y += (person_h - 50) # Thoda oopar charha kar (overlap)
+                else:
+                    current_x += max_person_w
+            
+            progress_bar.progress((i + 1) / len(uploaded_files))
 
-if st.button("Asli Shakal mein Flex Banayein 🚀"):
-    final_flex = bg_img.copy()
-    
-    uploaded_files = [f for f in files if f is not None]
-    # Filter constraints to match uploaded file count
-    current_constraints = box_constraints[:len(uploaded_files)]
-    
-    for i, f in enumerate(uploaded_files):
-        with st.spinner(f"Photo {i+1} set ho rahi hai..."):
-            img = Image.open(f)
-            
-            # Step 1: AI Auto-Cut
-            cut = remove(img, alpha_matting=True)
-            
-            # Step 2: Fit into box without stretching (fixes long faces)
-            box_w, box_h = current_constraints[i]
-            styled_img = resize_contain(cut, box_w, box_h)
-            
-            # Step 3: Fade Bottom and Blend
-            styled_img = apply_style_fade(styled_img)
-            
-            # Step 4: Paste
-            # Define pasting coordinates (adjust for centering if needed, but let's stick to base confirmed)
-            positions = [pos1, pos2, pos3][:len(uploaded_files)]
-            final_flex.paste(styled_img, positions[i], styled_img)
-    
-    # Result
-    st.image(final_flex, use_column_width=True)
-    
-    # Download
-    buf = io.BytesIO()
-    final_flex.save(buf, format="PNG")
-    st.download_button("📥 Flex Download Karein", buf.getvalue(), "rajput_chehre_fix_flex.png")
+        st.image(final_flex, use_column_width=True)
+        
+        buf = io.BytesIO()
+        final_flex.save(buf, format="PNG")
+        st.download_button("📥 Full Group Flex Download", buf.getvalue(), "rajput_unlimited_flex.png")
